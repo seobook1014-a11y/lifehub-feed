@@ -35,9 +35,7 @@ jobs:
           fi
       - name: Purge jsDelivr cache for changed files
         run: |
-          git diff --name-only HEAD~1 HEAD -- feed/ 2>/dev/null | while read -r path; do
-            [ -f "$path" ] || continue
-            curl -fsS -X POST "https://purge.jsdelivr.net/repo/seobook1014-a11y/lifehub-feed/${path}" \
-              -H 'Content-Type: application/json' -d '{}' || echo "purge failed (rate limit?): $path"
-            sleep 1
-          done
+          PATHS=$(git diff --name-only HEAD~1 HEAD -- feed/ 2>/dev/null | sed 's|^feed/|/gh/seobook1014-a11y/lifehub-feed@main/feed/|' | jq -Rsc 'split("\n") | map(select(length > 0)) | {path: .}')
+          if [ -n "$PATHS" ] && [ "$PATHS" != '{"path":[]}' ]; then
+            curl -fsS -X POST "https://purge.jsdelivr.net/" -H 'Content-Type: application/json' -d "$PATHS" || echo "purge failed (rate limit?): $PATHS"
+          fi
