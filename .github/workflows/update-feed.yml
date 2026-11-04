@@ -1,0 +1,43 @@
+name: update-feed
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-feed
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Generate feed snapshots
+        run: node scripts/generate-feed.mjs
+      - name: Commit changes (content change or daily heartbeat)
+        run: |
+          CHANGED=$(git status --porcelain feed/ | head -5)
+          TODAY=$(date -u +%F)
+          LASTDATE=$(git log -1 --format=%ad --date=format:%F 2>/dev/null || echo none)
+          if [ -n "$CHANGED" ] || [ "$TODAY" != "$LASTDATE" ]; then
+            git add feed/ meta.json
+            git -c user.name=feed-bot -c user.email=actions@github.com commit -m "feed update ${TODAY} $(date -u +%H:%M) UTC"
+            git push
+          else
+            echo "no feed change, no heartbeat due"
+          fi
+      - name: Purge jsDelivr cache for changed files
+        run: |
+          git diff --name-only HEAD~1 HEAD -- feed/ 2>/dev/null | while read -r path; do
+            [ -f "$path" ] || continue
+            curl -fsS -X POST "https://purge.jsdelivr.net/repo/seobook1014-a11y/lifehub-feed/${path}" \
+              -H 'Content-Type: application/json' -d '{}' || echo "purge failed (rate limit?): $path"
+            sleep 1
+          done

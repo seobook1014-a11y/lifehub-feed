@@ -1,0 +1,17 @@
+{
+  "generatedAt": 1793773582500,
+  "okVariants": 36,
+  "failVariants": 14,
+  "summary": {
+    "in8b": {
+      "variants": 25,
+      "posts": 30
+    },
+    "play": {
+      "variants": 11,
+      "posts": 25
+    }
+  },
+  "source": "GET /api/posts?public=1 via site origins",
+  "repo": "seobook1014-a11y/lifehub-feed"
+}
