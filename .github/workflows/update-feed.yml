@@ -21,8 +21,10 @@ jobs:
           node-version: 20
       - name: Generate feed snapshots
         run: node scripts/generate-feed.mjs
-      - name: Commit changes (content change or daily heartbeat)
+      - name: Commit changed content or daily heartbeat
+        id: commit
         run: |
+          BEFORE=$(git rev-parse HEAD)
           CHANGED=$(git status --porcelain feed/ | head -5)
           TODAY=$(date -u +%F)
           LASTDATE=$(git log -1 --format=%ad --date=format:%F 2>/dev/null || echo none)
@@ -30,12 +32,19 @@ jobs:
             git add feed/ meta.json
             git -c user.name=feed-bot -c user.email=actions@github.com commit -m "feed update ${TODAY} $(date -u +%H:%M) UTC"
             git push
+          fi
+          if [ "$(git rev-parse HEAD)" != "$BEFORE" ]; then
+            echo "committed=yes" >> "$GITHUB_OUTPUT"
           else
+            echo "committed=no" >> "$GITHUB_OUTPUT"
             echo "no feed change, no heartbeat due"
           fi
-      - name: Purge jsDelivr cache for changed files
+      - name: Move feed-latest tag and purge jsDelivr when content changed
+        if: steps.commit.outputs.committed == 'yes'
         run: |
-          PATHS=$(git diff --name-only HEAD~1 HEAD -- feed/ 2>/dev/null | sed 's|^feed/|/gh/seobook1014-a11y/lifehub-feed@main/feed/|' | jq -Rsc 'split("\n") | map(select(length > 0)) | {path: .}')
-          if [ -n "$PATHS" ] && [ "$PATHS" != '{"path":[]}' ]; then
-            curl -fsS -X POST "https://purge.jsdelivr.net/" -H 'Content-Type: application/json' -d "$PATHS" || echo "purge failed (rate limit?): $PATHS"
+          FEED_PATHS=$(git diff --name-only HEAD~1 HEAD -- feed/ | sed 's|^feed/|/gh/seobook1014-a11y/lifehub-feed@feed-latest/feed/|' | jq -Rsc 'split("\n") | map(select(length > 0)) | {path: .}')
+          if [ "$FEED_PATHS" != '{"path":[]}' ]; then
+            git tag -f feed-latest HEAD
+            git push -f origin refs/tags/feed-latest
+            curl -fsS -X POST "https://purge.jsdelivr.net/" -H 'Content-Type: application/json' -d "$FEED_PATHS" || echo "purge failed (rate limit?): $FEED_PATHS"
           fi
