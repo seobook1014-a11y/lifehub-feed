@@ -1,15 +1,15 @@
 {
-  "generatedAt": 1794960689097,
-  "okVariants": 47,
-  "failVariants": 3,
+  "generatedAt": 1795047452766,
+  "okVariants": 50,
+  "failVariants": 0,
   "summary": {
     "in8b": {
       "variants": 25,
       "posts": 4
     },
     "play": {
-      "variants": 22,
-      "posts": 2
+      "variants": 25,
+      "posts": 4
     }
   },
   "source": "GET /api/posts?public=1 via site origins",
