@@ -1,14 +1,14 @@
 {
-  "generatedAt": 1795481027224,
-  "okVariants": 48,
-  "failVariants": 2,
+  "generatedAt": 1795565714722,
+  "okVariants": 50,
+  "failVariants": 0,
   "summary": {
     "in8b": {
       "variants": 25,
       "posts": 4
     },
     "play": {
-      "variants": 23,
+      "variants": 25,
       "posts": 4
     }
   },
